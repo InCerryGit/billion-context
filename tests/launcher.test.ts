@@ -995,6 +995,29 @@ test("ensureProxyRunning: throws when never healthy within deadline", async () =
     );
 });
 
+test("ensureProxyRunning: strict port never trusts an unregistered healthy listener", async () => {
+    let ticks = 0;
+    let probes = 0;
+    await assert.rejects(
+        ensureProxyRunning(
+            { host: "127.0.0.1", port: 8787, strictPort: true, passthrough: false, debug: false, lane: "opencode" },
+            {
+                spawnImpl: (_cmd, args, options) => {
+                    assert.equal(args[args.indexOf("--port") + 1], "8787");
+                    assert.equal(options.env?.BILI_STRICT_PORT, "1");
+                    return makeFakeChild(42422);
+                },
+                fetchImpl: async () => { probes++; return { ok: true }; },
+                readInstanceFile: () => undefined,
+                now: () => ticks * 1000,
+                sleep: async () => { ticks += 10; },
+            },
+        ),
+        /did not become healthy/,
+    );
+    assert.equal(probes, 0, "a bare health response cannot prove ownership of the pinned port");
+});
+
 test("ensureProxyRunning: registers a child 'error' handler so an async spawn failure rejects cleanly (#809/D)", async () => {
     const subscribed: string[] = [];
     const child: SpawnChild = {
@@ -1458,22 +1481,22 @@ test("ensureProxyRunning: strictPort launcher refuses a different-port starter's
         claimStartingMarker({ token: "starter-strict", pid: process.pid, host: "127.0.0.1", port: 8807, startedAt: Date.now() });
         let spawnCalls = 0;
         let spawned = false;
+        let launchToken: string | undefined;
         const handle = await ensureProxyRunning(
             { host: "127.0.0.1", port: 8808, passthrough: false, debug: false, lane: "pi", strictPort: true },
             {
-                spawnImpl: () => {
+                spawnImpl: (_cmd, _args, options) => {
                     spawnCalls++;
                     spawned = true;
+                    launchToken = options.env?.BILI_LAUNCH_TOKEN;
                     return makeFakeChild(42473);
                 },
                 fetchImpl: async () => ({ ok: true }),
                 fetchHealthInfo: async (origin) => (origin.endsWith("8807") ? { ok: true, instanceId: "inst-wait" } : undefined),
-                // Before spawn: the starter's proxy is up on ANOTHER port. After
-                // spawn: a dead-owner record so the readback falls back to the
-                // preferred-origin health probe.
+                // A strict-port spawn must confirm its own launch token.
                 readInstanceFile: () =>
                     spawned
-                        ? recordedInstance({ instanceId: "inst-stale", origin: "http://127.0.0.1:8808", port: 8808, pid: 4_000_000 })
+                        ? recordedInstance({ instanceId: "inst-own", origin: "http://127.0.0.1:8808", port: 8808, launchToken })
                         : recordedInstance({ instanceId: "inst-wait", origin: "http://127.0.0.1:8807", port: 8807 }),
                 sleep: () => {
                     removeStartingMarker();

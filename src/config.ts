@@ -1080,6 +1080,15 @@ function loadConfigFile(): FileConfig {
     return {};
 }
 
+export function resolveOpencodeNativePort(): number {
+    const port = loadConfigFile().port;
+    if (port === undefined) return 0;
+    if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error(`bili: port in ${configFile()} must be an integer between 1 and 65535`);
+    }
+    return port;
+}
+
 /** Default loopback port for the claude native install (#964): the value the
  *  installer bakes into ~/.claude/settings.json's env.ANTHROPIC_BASE_URL and
  *  the SessionStart hook brings a proxy up on. Documented as reserved. */

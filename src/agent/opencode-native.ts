@@ -2,7 +2,7 @@
 // #809): the package-installed OpenCode 2.x plugin bootstraps its own proxy —
 // the pi pattern (#519/#706), adapted to opencode's egress seam. Flow at
 // plugin load:
-//   1. spawn the package's own proxy (`dist/index.js start`, ephemeral port,
+//   1. spawn the package's own proxy (`dist/index.js start`, configured or ephemeral port,
 //      parent-pid watchdog = this opencode process) via ensureProxyRunning —
 //      a healthy compatible instance is ATTACHED, not doubled;
 //   2. register an http.request hook that rewrites model-API URLs to
@@ -67,6 +67,7 @@
 //     owner-switch; no compaction-prompt surgery needed.
 
 import { ACP_TOOLS_OPENAI } from "../compress-tool.js";
+import { resolveOpencodeNativePort } from "../config.js";
 import { ensureProxyRunning, LAUNCHER_DEFAULT_HOST, unwrapUpstream, wrapUpstream } from "../launcher.js";
 import { createAcpCommandHooks, showAcpText } from "./opencode-acp-command.js";
 import { markNativeHost, nativeAttachOrigin, nativeBootstrapGate, nativeProxyScriptPath, proxyEnvOrigin, singleFlight } from "./native-bootstrap.js";
@@ -135,8 +136,9 @@ const state: NativeInterceptState = { origin: undefined, ready: Promise.resolve(
 
 async function bootstrap(): Promise<string | undefined> {
     try {
+        const port = resolveOpencodeNativePort();
         const handle = await ensureProxyRunning(
-            { host: LAUNCHER_DEFAULT_HOST, port: 0, passthrough: false, debug: false, lane: "opencode" },
+            { host: LAUNCHER_DEFAULT_HOST, port, strictPort: port > 0, passthrough: false, debug: false, lane: "opencode" },
             { scriptPath: nativeProxyScriptPath() },
         );
         state.origin = handle.origin;

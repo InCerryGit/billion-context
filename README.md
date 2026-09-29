@@ -190,6 +190,7 @@ Notes:
 
 - Native mode is **mutually exclusive** with the standalone in-process extensions (`billion-context-pi`, `opencode-acp`) — the installer swaps the entries and snapshots the original config (`.bili-bak`).
 - OpenCode legacy sessions, V1/V2 shapes and caveats: [OpenCode](CLIENTS.md#opencode).
+- OpenCode's self-managed proxy can use a fixed loopback port: merge `"port": 8787` into `~/.config/billion-context/billion-context.json`. Omit it to keep automatic ports. Explicit attach targets win; incompatible concurrent instances on the same port fail bootstrap and log a warning (model traffic falls back to direct). Details and validation: [`port`](CONFIGURATION.md#port).
 - `kimi` reports runtime-info at bootstrap only (static headers can't carry per-request window/model values) and binds subagents by per-call `conversation_id`.
 - `hermes`'s native plugin is Python: it points hermes' httpx stack at the proxy via env vars after a health check and stamps per-request headers through an `llm_request` middleware.
 - `codex` has a companion MCP-shell install too, but it needs a running proxy — not native mode.

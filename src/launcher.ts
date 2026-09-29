@@ -3002,7 +3002,9 @@ export async function ensureProxyRunning(
             // the discovery surface and our child is retry-binding elsewhere.
             // A stale record (dead pid / legacy plain) cannot vouch for anything.
             const stale = !isProxyInstanceFile(inst) || !isPidAlive(inst.pid);
-            if (stale && (await probeHealth(proxyOrigin(opts.host, port), fetchImpl))) {
+            // A pinned port can already belong to an unrelated healthy listener;
+            // only this launch's token may confirm a strict-port child's startup.
+            if (!opts.strictPort && stale && (await probeHealth(proxyOrigin(opts.host, port), fetchImpl))) {
                 return { origin: proxyOrigin(opts.host, port), port, child, logPath };
             }
         }

@@ -72,6 +72,10 @@ Top-level keys that control how the proxy listens and behaves globally.
 - **Status:** ACTIVE
 - **Description:** TCP port the proxy listens on. Must be an integer between 1 and 65535. Overridden by the `ACP_PORT` (or `PORT`) environment variable, or the `--port` CLI flag. An invalid value aborts startup.
 
+For **OpenCode's self-managed plugin proxy** (native V1/V2 bootstrap and the launcher plugin's recovery spawn), an explicitly configured top-level `port` also pins the loopback port. For example, merge `"port": 8787` into `~/.config/billion-context/billion-context.json` (or the existing `BILI_CONFIG_FILE` override). Omit `port` to retain automatic ephemeral-port selection; `0`, non-integers and values outside 1–65535 are invalid. This path ignores `ACP_PORT`, `PORT` and `host`, and keeps the loopback bind. Explicit attach targets take precedence; the configured port is read only when spawning a replacement is needed.
+
+A compatible session-owned proxy on that port can still be shared through normal discovery. An occupied port with no attachable instance fails bootstrap instead of switching ports or accepting an unknown listener; concurrent incompatible instances need different config files/ports or an omitted `port`. The plugin logs the failure and retains its existing direct, uncompressed fallback. Other native clients and standalone/launcher defaults are unchanged. A strict-port spawn requires its instance-file startup handshake; an unwritable state directory therefore fails startup rather than trusting a bare health response.
+
 ### `host`
 
 - **Type:** `string`

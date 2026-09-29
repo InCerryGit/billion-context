@@ -173,6 +173,7 @@ pi / omp / kimi / claude 没有客户端侧通道 —— 它们的配置条目�
 
 - 原生模式与独立进程内扩展(`billion-context-pi`、`opencode-acp`)**互斥** —— 安装器负责换条目并把原配置快照(`.bili-bak`)。
 - OpenCode 旧会话、V1/V2 插件形态与全部注意事项:[OpenCode](CLIENTS.zh-CN.md#opencode)。
+- OpenCode 自管代理可固定回环端口：在 `~/.config/billion-context/billion-context.json` 中合并 `"port": 8787`；省略则保留自动端口。显式 attach 目标优先；同端口的并发不兼容实例会自举失败并记录警告（模型流量降级为直连）。范围及校验规则见 [`port`](CONFIGURATION.zh-CN.md#port)。
 - `kimi` 仅在自举时上报 runtime-info(静态头无法承载逐请求窗口/模型值),子代理会话按每次调用的 `conversation_id` 绑定。
 - `hermes` 的原生插件是 Python:健康检查通过后用环境变量把 hermes 的 httpx 栈指向代理,并经 `llm_request` 中间件打逐请求头。
 - `claude` 有**原生姿态**(#964):受管 settings 块 + `SessionStart` hook + 稳定端口的 MCP shell;`BILI_NATIVE_CLAUDE=0` 退出(passthrough)。机制:[TECHNICAL-NOTES.zh-CN.md](TECHNICAL-NOTES.zh-CN.md)。
